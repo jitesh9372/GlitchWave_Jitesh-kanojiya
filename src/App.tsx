@@ -984,6 +984,11 @@ export default function App() {
 
   // Trigger notification toast
   const [triggerToast, setTriggerToast] = useState<{ message: string; icon: string } | null>(null);
+  const showTriggerToast = React.useCallback((message: string, icon: string) => {
+    setTriggerToast({ message, icon });
+    setTimeout(() => setTriggerToast(null), 4000);
+  }, []);
+
   const [hardwareEnabled, setHardwareEnabled] = useState(false);
   const [hardwareMsg, setHardwareMsg] = useState('');
   
@@ -1004,6 +1009,10 @@ export default function App() {
   const activeAlertIdRef = useRef<string | null>(null);
   const shakeTimestampsRef = useRef<number[]>([]);
   const volumePressTimestampsRef = useRef<number[]>([]);
+
+  useEffect(() => {
+    activeAlertIdRef.current = activeAlertId;
+  }, [activeAlertId]);
 
   useEffect(() => {
     // Check initial session
