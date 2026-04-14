@@ -303,6 +303,19 @@ const EmergencyButton = React.memo(({ number, label, icon: Icon }: { number: str
   </motion.a>
 ));
 
+const NavigationLinkButton = React.memo(({ to, label, icon: Icon }: { to: string, label: string, icon: any }) => (
+  <Link 
+    to={to}
+    className="flex flex-col items-center justify-center p-6 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-[32px] hover:border-primary hover:shadow-2xl hover:shadow-red-500/10 transition-all group relative overflow-hidden"
+  >
+    <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+    <div className="w-16 h-16 bg-slate-50 dark:bg-slate-800 rounded-full flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300">
+      <Icon className="w-8 h-8 text-slate-400 group-hover:text-primary transition-colors" />
+    </div>
+    <span className="font-bold text-slate-700 dark:text-slate-300 group-hover:text-primary transition-colors text-center">{label}</span>
+  </Link>
+));
+
 const Home = ({ 
   user, 
   currentLanguage,
@@ -590,6 +603,20 @@ const Home = ({
               <EmergencyButton number={APP_CONFIG.EMERGENCY_NUMBERS.POLICE} label="Police" icon={Shield} />
               <EmergencyButton number={APP_CONFIG.EMERGENCY_NUMBERS.AMBULANCE} label="Ambulance" icon={AlertCircle} />
               <EmergencyButton number={APP_CONFIG.EMERGENCY_NUMBERS.FIRE} label="Fire" icon={Zap} />
+            </div>
+          </div>
+
+          {/* Platform Navigation Grid */}
+          <div className="max-w-4xl mx-auto w-full mt-12 md:mt-20">
+            <div className="flex items-center gap-4 mb-4 md:mb-8">
+              <div className="h-px flex-1 bg-slate-200 dark:bg-slate-800" />
+              <h3 className="text-xs font-black uppercase tracking-[0.3em] text-slate-400 dark:text-slate-500">Platform Features</h3>
+              <div className="h-px flex-1 bg-slate-200 dark:bg-slate-800" />
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
+              <NavigationLinkButton to="/dashboard" label="User Dashboard" icon={LayoutDashboard} />
+              <NavigationLinkButton to="/analytics" label="Risk Analytics" icon={Activity} />
+              <NavigationLinkButton to="/critical-zones" label="Critical Zones" icon={MapIcon} />
             </div>
           </div>
         </div>
