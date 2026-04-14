@@ -995,7 +995,6 @@ export default function App() {
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
   const watchIdRef = useRef<number | null>(null);
-  const recordingStreamRef = useRef<MediaStream | null>(null);
 
   // Siren and Flash Refs
   const audioCtxRef = useRef<AudioContext | null>(null);
@@ -1276,27 +1275,36 @@ export default function App() {
       alert("Your browser does not support media recording. Please use a modern browser.");
       return false;
     }
-
     try {
-      // Always create a DEDICATED recording stream (never reuse the flash/torch stream)
-      // The flash stream uses the back camera for torch; recording uses front camera + audio
-      let stream: MediaStream;
-      try {
-        stream = await navigator.mediaDevices.getUserMedia({
-          audio: true,
-          video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } }
-        });
-      } catch {
+      // Unify stream usage: Mobile browsers crash if we ask for front camera while flash uses rear camera
+      // So we use exactly ONE stream with rear camera & audio, which serves BOTH recording and flashlight!
+      let stream = streamRef.current;
+      
+      if (!stream) {
         try {
-          // Try any camera if front camera unavailable
-          stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: true });
+          stream = await navigator.mediaDevices.getUserMedia({
+            audio: true,
+            video: { facingMode: 'environment', width: { ideal: 640 }, height: { ideal: 480 } }
+          });
         } catch {
-          // Final fallback: audio only
-          console.warn('Video unavailable, recording audio only');
-          stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+          try {
+            // Try any general video
+            stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: true });
+          } catch {
+            console.warn('Video unavailable, recording audio only');
+            stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+          }
+        }
+        streamRef.current = stream; // Important: Make it available for Flashlight to reuse!
+      } else {
+        // If the shared stream exists but doesn't have audio, we must add it for recording
+        if (stream.getAudioTracks().length === 0) {
+          try {
+            const audioStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            stream.addTrack(audioStream.getAudioTracks()[0]);
+          } catch(e) {}
         }
       }
-      recordingStreamRef.current = stream;
 
       // Pick best supported mime type for cross-device compatibility
       const mimeTypes = [
@@ -1322,10 +1330,10 @@ export default function App() {
       recorder.onstart = () => setIsRecording(true);
       recorder.onstop = async () => {
         setIsRecording(false);
-        // Always stop the dedicated recording stream tracks
-        if (recordingStreamRef.current) {
-          recordingStreamRef.current.getTracks().forEach(track => track.stop());
-          recordingStreamRef.current = null;
+        // Clean up tracks ONLY if the SOS is completely disabled (flash isn't active)
+        if (!activeAlertId && streamRef.current) {
+          streamRef.current.getTracks().forEach(track => track.stop());
+          streamRef.current = null;
         }
 
         if (audioChunksRef.current.length > 0 && user) {
