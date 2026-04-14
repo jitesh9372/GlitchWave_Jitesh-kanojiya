@@ -58,7 +58,23 @@ export default function CriticalZones() {
           return { ...alert, lat, lng, severity };
         }).filter(a => a.lat !== 0 && a.lng !== 0); // Only keep valid coordinates
 
-        setAlerts(parsedAlerts);
+        // Mock historical & live data showing accidents and overall situation in India
+        const MOCK_INDIA_INCIDENTS = [
+          { id: 'm1', name: 'NH-48 Highway Patrol', message: 'Major multi-vehicle pileup. Road blocked.', status: 'active', created_at: new Date(Date.now() - 10 * 60000).toISOString(), lat: 19.2823, lng: 72.8806, severity: 'critical', type: 'Accident' },
+          { id: 'm2', name: 'Mumbai Fire Response', message: 'Industrial fire in MIDC area. 4 Fire engines dispatched.', status: 'active', created_at: new Date(Date.now() - 15 * 60000).toISOString(), lat: 19.1136, lng: 72.8697, severity: 'critical', type: 'Fire' },
+          { id: 'm3', name: 'Delhi Traffic Police', message: 'Waterlogging causing severe traffic jams at ITO.', status: 'active', created_at: new Date(Date.now() - 2 * 60000).toISOString(), lat: 28.6276, lng: 77.2404, severity: 'high', type: 'Hazard' },
+          { id: 'm4', name: 'Bangalore EMT', message: 'Medical emergency reported on ORR. Ambulance approaching.', status: 'active', created_at: new Date(Date.now() - 1 * 60000).toISOString(), lat: 12.9716, lng: 77.5946, severity: 'high', type: 'Medical' },
+          { id: 'm5', name: 'Chennai Disaster Response', message: 'Cyclone warning alert active for coastal regions.', status: 'active', created_at: new Date(Date.now() - 8 * 60000).toISOString(), lat: 13.0827, lng: 80.2707, severity: 'critical', type: 'Weather' },
+          { id: 'm6', name: 'Pune City Police', message: 'Protest cleared. Traffic returning to normal in Shivaji Nagar.', status: 'resolved', created_at: new Date(Date.now() - 45 * 60000).toISOString(), lat: 18.5204, lng: 73.8567, severity: 'low', type: 'General' },
+          { id: 'm7', name: 'Hyderabad Highway Auth', message: 'Overturned truck cleared from Outer Ring Road.', status: 'resolved', created_at: new Date(Date.now() - 120 * 60000).toISOString(), lat: 17.3850, lng: 78.4867, severity: 'low', type: 'Accident' },
+          { id: 'm8', name: 'Kolkata Emergency', message: 'Building collapse reports in older districts. Search & rescue initiated.', status: 'active', created_at: new Date(Date.now() - 3 * 60000).toISOString(), lat: 22.5726, lng: 88.3639, severity: 'high', type: 'Critical' },
+          { id: 'm9', name: 'Jaipur Police', message: 'Suspicious object reported. Area cordoned off for safety.', status: 'active', created_at: new Date(Date.now() - 25 * 60000).toISOString(), lat: 26.9124, lng: 75.7873, severity: 'critical', type: 'Security' },
+          { id: 'm10', name: 'Ahmedabad Traffic', message: 'Major bridge repair work ongoing. Diversion in place.', status: 'active', created_at: new Date(Date.now() - 60 * 60000).toISOString(), lat: 23.0225, lng: 72.5714, severity: 'high', type: 'Traffic' },
+          { id: 'm11', name: 'Agra Highway Patrol', message: 'Dense fog causing extremely low visibility on Yamuna Expressway.', status: 'active', created_at: new Date(Date.now() - 30 * 60000).toISOString(), lat: 27.2038, lng: 77.9629, severity: 'high', type: 'Weather' },
+          { id: 'm12', name: 'Kochi Port Authority', message: 'Oil spill reported off coast. Cleanup crew dispatched.', status: 'active', created_at: new Date(Date.now() - 40 * 60000).toISOString(), lat: 9.9312, lng: 76.2673, severity: 'critical', type: 'Hazard' }
+        ];
+
+        setAlerts([...parsedAlerts, ...MOCK_INDIA_INCIDENTS]);
       } catch (err) {
         console.error("Error fetching critical zones:", err);
       } finally {
