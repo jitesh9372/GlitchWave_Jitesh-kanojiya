@@ -336,6 +336,14 @@ const EmergencyButton = React.memo(({ number, label, icon: Icon, theme = "slate"
       hoverShadow: "hover:shadow-blue-500/20",
       glowBg: "bg-blue-500/5 group-hover:bg-blue-500/10"
     },
+    teal: {
+      border: "border-teal-200 dark:border-teal-900/40 hover:border-teal-500",
+      bg: "bg-teal-50/30 dark:bg-teal-900/10",
+      iconBg: "bg-teal-100 dark:bg-teal-800/50 group-hover:bg-teal-500 shadow-inner group-hover:shadow-teal-500/40",
+      iconColor: "text-teal-500 group-hover:text-white",
+      hoverShadow: "hover:shadow-teal-500/20",
+      glowBg: "bg-teal-500/5 group-hover:bg-teal-500/10"
+    },
     rose: {
       border: "border-rose-200 dark:border-rose-900/40 hover:border-rose-500",
       bg: "bg-rose-50/30 dark:bg-rose-900/10",
@@ -660,32 +668,34 @@ const Home = ({
                 whileTap={{ scale: 0.98 }}
                 onClick={handleSiren}
                 className={cn(
-                  "px-4 py-4 rounded-2xl border transition-all flex flex-col items-center justify-center gap-2 shadow-sm",
+                  "px-4 py-4 rounded-3xl border transition-all flex flex-col items-center justify-center gap-2 shadow-sm group relative overflow-hidden",
                   isSirenActive 
-                    ? "bg-primary text-white border-primary animate-pulse shadow-red-500/20" 
-                    : "bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-800 hover:border-primary/50"
+                    ? "bg-indigo-500 text-white border-indigo-400 animate-pulse shadow-lg shadow-indigo-500/40" 
+                    : "bg-indigo-50/30 dark:bg-indigo-900/10 text-indigo-600 dark:text-indigo-400 border-indigo-200 dark:border-indigo-900/40 hover:border-indigo-500 hover:shadow-indigo-500/20"
                 )}
               >
-                <div className={cn("p-2 rounded-xl transition-colors", isSirenActive ? "bg-white/20" : "bg-slate-50 dark:bg-slate-800")}>
-                  <Volume2 className={cn("w-5 h-5", isSirenActive ? "animate-bounce" : "")} />
+                <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/5 opacity-0 group-hover:opacity-100 transition-opacity" />
+                <div className={cn("p-3 rounded-2xl transition-colors shadow-inner group-hover:bg-indigo-500 group-hover:text-white duration-300", isSirenActive ? "bg-white/20" : "bg-indigo-100 dark:bg-indigo-800/50")}>
+                  <Volume2 className={cn("w-6 h-6", isSirenActive ? "animate-bounce" : "group-hover:scale-110 transition-transform")} />
                 </div>
-                <span className="font-bold uppercase tracking-widest text-[10px]">Siren</span>
+                <span className="font-bold uppercase tracking-widest text-[10px] group-hover:scale-105 transition-transform">Siren</span>
               </motion.button>
               <motion.button 
                 whileHover={{ scale: 1.02, y: -2 }}
                 whileTap={{ scale: 0.98 }}
                 onClick={handleFlash}
                 className={cn(
-                  "px-4 py-4 rounded-2xl border transition-all flex flex-col items-center justify-center gap-2 shadow-sm",
+                  "px-4 py-4 rounded-3xl border transition-all flex flex-col items-center justify-center gap-2 shadow-sm group relative overflow-hidden",
                   isFlashActive 
-                    ? "bg-yellow-400 text-white border-yellow-400 shadow-yellow-400/20" 
-                    : "bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-800 hover:border-yellow-400/50"
+                    ? "bg-yellow-400 text-white border-yellow-400 shadow-lg shadow-yellow-400/40" 
+                    : "bg-yellow-50/30 dark:bg-yellow-900/10 text-yellow-600 dark:text-yellow-400 border-yellow-200 dark:border-yellow-900/40 hover:border-yellow-500 hover:shadow-yellow-500/20"
                 )}
               >
-                <div className={cn("p-2 rounded-xl transition-colors", isFlashActive ? "bg-white/20" : "bg-slate-50 dark:bg-slate-800")}>
-                  <Zap className={cn("w-5 h-5", isFlashActive ? "animate-pulse" : "")} />
+                <div className="absolute inset-0 bg-gradient-to-br from-yellow-500/5 opacity-0 group-hover:opacity-100 transition-opacity" />
+                <div className={cn("p-3 rounded-2xl transition-colors shadow-inner group-hover:bg-yellow-400 group-hover:text-white duration-300", isFlashActive ? "bg-white/20" : "bg-yellow-100 dark:bg-yellow-800/50")}>
+                  <Zap className={cn("w-6 h-6", isFlashActive ? "animate-pulse" : "group-hover:scale-110 transition-transform")} />
                 </div>
-                <span className="font-bold uppercase tracking-widest text-[10px]">Flash</span>
+                <span className="font-bold uppercase tracking-widest text-[10px] group-hover:scale-105 transition-transform">Flash</span>
               </motion.button>
             </div>
           </div>
@@ -698,7 +708,7 @@ const Home = ({
               <div className="h-px flex-1 bg-slate-200 dark:bg-slate-800" />
             </div>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-              <EmergencyButton number={APP_CONFIG.EMERGENCY_NUMBERS.GENERAL} label="General" icon={Phone} theme="slate" />
+              <EmergencyButton number={APP_CONFIG.EMERGENCY_NUMBERS.GENERAL} label="General" icon={Phone} theme="teal" />
               <EmergencyButton number={APP_CONFIG.EMERGENCY_NUMBERS.POLICE} label="Police" icon={Shield} theme="blue" />
               <EmergencyButton number={APP_CONFIG.EMERGENCY_NUMBERS.AMBULANCE} label="Ambulance" icon={AlertCircle} theme="rose" />
               <EmergencyButton number={APP_CONFIG.EMERGENCY_NUMBERS.FIRE} label="Fire" icon={Zap} theme="amber" />
