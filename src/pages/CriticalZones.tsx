@@ -126,7 +126,7 @@ export default function CriticalZones() {
       </motion.div>
 
       {/* Map Wrapping Container */}
-      <div className="bg-white p-2 rounded-2xl shadow-sm border border-slate-200 flex-1 min-h-[600px] relative overflow-hidden z-0">
+      <div className="bg-white p-2 rounded-2xl shadow-sm border border-slate-200 relative overflow-hidden z-0" style={{ height: '600px', width: '100%' }}>
         {loading && (
           <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-white/80 backdrop-blur-sm">
             <Loader2 className="w-10 h-10 animate-spin text-primary mb-4" />
@@ -138,7 +138,7 @@ export default function CriticalZones() {
           center={[20.5937, 78.9629]} 
           zoom={5} 
           scrollWheelZoom={true}
-          className="w-full h-full rounded-xl z-0"
+          style={{ height: '100%', width: '100%', zIndex: 0, borderRadius: '0.75rem' }}
         >
           <MapFocus />
           <TileLayer
