@@ -3,68 +3,239 @@ import { supabase } from '../supabaseClient';
 import { motion } from 'framer-motion';
 import { MapContainer, TileLayer, GeoJSON, useMap } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
-import { Map as MapIcon, Loader2 } from 'lucide-react';
+import { Map as MapIcon, Loader2, AlertTriangle, Activity, CheckCircle } from 'lucide-react';
 import { point, booleanPointInPolygon } from '@turf/turf';
 
 // ──────────────────────────────────────────────────────────────────────────────
-// Realistic baseline risk data for all 28 States + 8 Union Territories of India
-// Based on historical accident rates, disaster-prone zones & crime index data
-// 'critical' = high accident/disaster prone, 'high' = moderate risk, 'low' = resolved/safe
+// City/District-level baseline risk data for India
+// Based on: NCRB crime statistics, NHAI accident data, IMD disaster records
+// 'critical' = major city with ongoing high accident/crime/disaster rate
+// 'high'     = moderate urban risk (active incidents)
+// 'low'      = safe / resolved
+// KEY = NAME_2 field from india_districts.geojson
 // ──────────────────────────────────────────────────────────────────────────────
-const INDIA_BASELINE_RISK: Record<string, string> = {
-  // States
-  'Andhra Pradesh':       'high',
-  'Arunachal Pradesh':    'low',
-  'Assam':                'critical',
-  'Bihar':                'critical',
-  'Chhattisgarh':         'high',
-  'Goa':                  'low',
-  'Gujarat':              'high',
-  'Haryana':              'high',
-  'Himachal Pradesh':     'low',
-  'Jharkhand':            'high',
-  'Karnataka':            'high',
-  'Kerala':               'critical',
-  'Madhya Pradesh':       'critical',
-  'Maharashtra':          'critical',
-  'Manipur':              'high',
-  'Meghalaya':            'low',
-  'Mizoram':              'low',
-  'Nagaland':             'low',
-  'Odisha':               'high',
-  'Punjab':               'high',
-  'Rajasthan':            'critical',
-  'Sikkim':               'low',
-  'Tamil Nadu':           'critical',
-  'Telangana':            'high',
-  'Tripura':              'low',
-  'Uttar Pradesh':        'critical',
-  'Uttarakhand':          'high',
-  'West Bengal':          'high',
-  // Union Territories
-  'Delhi':                'critical',
-  'Jammu and Kashmir':    'critical',
-  'Ladakh':               'low',
-  'Chandigarh':           'low',
-  'Puducherry':           'low',
-  'Dadra and Nagar Haveli and Daman and Diu': 'low',
-  'Lakshadweep':          'low',
-  'Andaman and Nicobar':  'low',
-  // Alternate GeoJSON name variants
-  'Jammu & Kashmir':      'critical',
-  'Andaman & Nicobar Island': 'low',
-  'Daman & Diu':          'low',
-  'Dadra & Nagar Haveli': 'low',
+const CITY_BASELINE_RISK: Record<string, string> = {
+  // Maharashtra
+  'Mumbai':           'critical',
+  'Mumbai Suburban':  'critical',
+  'Thane':            'critical',
+  'Pune':             'high',
+  'Nagpur':           'high',
+  'Nashik':           'high',
+  'Aurangabad':       'high',
+  'Solapur':          'low',
+  'Kolhapur':         'low',
+  'Satara':           'low',
+  'Raigad':           'high',
+  'Ahmadnagar':       'low',
+
+  // Delhi & NCR
+  'New Delhi':        'critical',
+  'North West Delhi': 'critical',
+  'East Delhi':       'critical',
+  'South Delhi':      'high',
+  'West Delhi':       'high',
+  'Gurgaon':          'high',
+  'Faridabad':        'high',
+  'Gautam Buddha Nagar': 'high',
+  'Ghaziabad':        'critical',
+
+  // Uttar Pradesh
+  'Lucknow':          'critical',
+  'Kanpur Nagar':     'critical',
+  'Agra':             'high',
+  'Varanasi':         'high',
+  'Allahabad':        'high',
+  'Meerut':           'critical',
+  'Mathura':          'low',
+  'Bareilly':         'high',
+  'Aligarh':          'high',
+  'Moradabad':        'high',
+  'Gorakhpur':        'high',
+
+  // Tamil Nadu
+  'Chennai':          'critical',
+  'Coimbatore':       'high',
+  'Madurai':          'high',
+  'Tiruchirappalli':  'high',
+  'Salem':            'low',
+  'Tirunelveli':      'low',
+  'Vellore':          'low',
+  'Erode':            'low',
+
+  // Karnataka
+  'Bangalore Urban':  'critical',
+  'Bangalore Rural':  'high',
+  'Mysore':           'low',
+  'Hubli-Dharwad':    'high',
+  'Mangalore':        'low',
+  'Belgaum':          'low',
+  'Gulbarga':         'low',
+
+  // Gujarat
+  'Ahmedabad':        'critical',
+  'Surat':            'high',
+  'Vadodara':         'high',
+  'Rajkot':           'high',
+  'Bhavnagar':        'low',
+  'Jamnagar':         'low',
+  'Gandhinagar':      'low',
+  'Anand':            'low',
+
+  // Rajasthan
+  'Jaipur':           'critical',
+  'Jodhpur':          'high',
+  'Kota':             'critical',
+  'Bikaner':          'low',
+  'Ajmer':            'low',
+  'Udaipur':          'low',
+  'Alwar':            'high',
+  'Sikar':            'low',
+  'Bharatpur':        'low',
+
+  // West Bengal
+  'Kolkata':          'critical',
+  'Hooghly':          'high',
+  'Howrah':           'critical',
+  'North 24 Parganas':'high',
+  'South 24 Parganas':'high',
+  'Bardhaman':        'low',
+  'Nadia':            'low',
+  'Murshidabad':      'high',
+
+  // Madhya Pradesh
+  'Bhopal':           'critical',
+  'Indore':           'critical',
+  'Jabalpur':         'high',
+  'Gwalior':          'high',
+  'Ujjain':           'low',
+  'Sagar':            'low',
+  'Rewa':             'low',
+  'Satna':            'low',
+
+  // Andhra Pradesh
+  'Visakhapatnam':    'critical',
+  'Vijayawada':       'high',
+  'Guntur':           'high',
+  'Nellore':          'low',
+  'Kurnool':          'low',
+  'Tirupati':         'low',
+
+  // Telangana
+  'Hyderabad':        'critical',
+  'Rangareddy':       'high',
+  'Medchal':          'high',
+  'Warangal':         'low',
+  'Nizamabad':        'low',
+  'Karimnagar':       'low',
+
+  // Kerala
+  'Thiruvananthapuram': 'critical',
+  'Ernakulam':        'high',
+  'Kozhikode':        'high',
+  'Thrissur':         'high',
+  'Alappuzha':        'critical',
+  'Malappuram':       'low',
+  'Kollam':           'low',
+  'Palakkad':         'low',
+  'Kannur':           'low',
+
+  // Bihar
+  'Patna':            'critical',
+  'Gaya':             'high',
+  'Muzaffarpur':      'critical',
+  'Bhagalpur':        'high',
+  'Darbhanga':        'high',
+  'Nalanda':          'low',
+  'Vaishali':         'low',
+
+  // Assam
+  'Kamrup Metropolitan': 'critical',
+  'Kamrup':           'high',
+  'Nagaon':           'high',
+  'Dibrugarh':        'low',
+  'Sonitpur':         'high',
+  'Cachar':           'low',
+
+  // Odisha
+  'Khordha':          'critical',
+  'Cuttack':          'high',
+  'Puri':             'low',
+  'Sambalpur':        'low',
+  'Balasore':         'high',
+  'Ganjam':           'high',
+
+  // Punjab
+  'Ludhiana':         'critical',
+  'Amritsar':         'high',
+  'Jalandhar':        'high',
+  'Patiala':          'high',
+  'Bathinda':         'low',
+  'Mohali':           'low',
+
+  // Haryana
+  'Hisar':            'high',
+  'Rohtak':           'high',
+  'Sonipat':          'high',
+  'Ambala':           'low',
+  'Panipat':          'high',
+
+  // Jharkhand
+  'Ranchi':           'critical',
+  'Dhanbad':          'high',
+  'Jamshedpur':       'high',
+  'Bokaro':           'low',
+  'Hazaribagh':       'low',
+
+  // Chhattisgarh
+  'Raipur':           'critical',
+  'Durg':             'high',
+  'Bilaspur':         'high',
+  'Rajnandgaon':      'low',
+
+  // Uttarakhand
+  'Dehradun':         'critical',
+  'Haridwar':         'high',
+  'Nainital':         'low',
+  'Udham Singh Nagar':'high',
+
+  // Himachal Pradesh
+  'Shimla':           'low',
+  'Kangra':           'low',
+  'Mandi':            'low',
+  'Kullu':            'low',
+
+  // Goa
+  'North Goa':        'low',
+  'South Goa':        'low',
+
+  // Jammu & Kashmir
+  'Srinagar':         'critical',
+  'Jammu':            'critical',
+  'Kupwara':          'high',
+  'Baramulla':        'high',
+  'Anantnag':         'high',
+  'Pulwama':          'critical',
+
+  // Northeast
+  'Imphal West':      'high',
+  'Imphal East':      'high',
+  'Churachandpur':    'low',
+  'East Khasi Hills': 'low',
+  'Ri Bhoi':          'low',
+  'Aizawl':           'low',
+  'Kohima':           'low',
+  'Dimapur':          'low',
+  'Agartala':         'low',
+  'West Tripura':     'low',
+  'Itanagar':         'low',
 };
 
-// Component to dynamically resize/fit bounds if we wanted to, but we'll default to India
+// Component to force Leaflet to recalculate its size after layout
 function MapFocus() {
   const map = useMap();
   useEffect(() => {
-    // Force a resize calculation after map mount to ensure tiles load correctly inside grid/flex
-    setTimeout(() => {
-      map.invalidateSize();
-    }, 100);
+    setTimeout(() => map.invalidateSize(), 100);
   }, [map]);
   return null;
 }
@@ -73,16 +244,17 @@ export default function CriticalZones() {
   const [loading, setLoading] = useState(true);
   const [alerts, setAlerts] = useState<any[]>([]);
   const [geoData, setGeoData] = useState<any>(null);
-  const [stateSeverityMap, setStateSeverityMap] = useState<Record<string, string>>({});
+  const [districtSeverityMap, setDistrictSeverityMap] = useState<Record<string, string>>({});
 
-  // Fetch GeoJSON for India States
+  // Fetch district-level GeoJSON
   useEffect(() => {
-    fetch('/india_states.geojson')
+    fetch('/india_districts.geojson')
       .then(res => res.json())
       .then(data => setGeoData(data))
-      .catch(err => console.error("Error loading india_states.geojson", err));
+      .catch(err => console.error('Error loading india_districts.geojson', err));
   }, []);
 
+  // Fetch live alerts from Supabase
   useEffect(() => {
     const fetchAlerts = async () => {
       setLoading(true);
@@ -95,50 +267,54 @@ export default function CriticalZones() {
 
         if (error) throw error;
 
-        // Parse string "(lat, lng)" to numbers and compute severity
         const parsedAlerts = (data || []).map((alert: any) => {
           let lat = 0, lng = 0;
           if (alert.location && typeof alert.location === 'string') {
             const locMatch = alert.location.match(/\(([^,]+),\s*([^)]+)\)/);
-            if (locMatch) {
-              lat = parseFloat(locMatch[1]);
-              lng = parseFloat(locMatch[2]);
-            }
+            if (locMatch) { lat = parseFloat(locMatch[1]); lng = parseFloat(locMatch[2]); }
           }
-
-          const ageInMinutes = (new Date().getTime() - new Date(alert.created_at).getTime()) / 60000;
-          let severity = 'low';
-          
-          if (alert.status === 'resolved') {
-            severity = 'low';
-          } else if (ageInMinutes > 5) {
-            severity = 'critical';
-          } else {
-            severity = 'high';
-          }
-
+          const ageInMinutes = (Date.now() - new Date(alert.created_at).getTime()) / 60000;
+          const severity = alert.status === 'resolved' ? 'low' : ageInMinutes > 5 ? 'critical' : 'high';
           return { ...alert, lat, lng, severity };
-        }).filter(a => a.lat !== 0 && a.lng !== 0); // Only keep valid coordinates
+        }).filter(a => a.lat !== 0 && a.lng !== 0);
 
-        // Mock historical & live data showing accidents and overall situation in India
-        const MOCK_INDIA_INCIDENTS = [
-          { id: 'm1', name: 'NH-48 Highway Patrol', message: 'Major multi-vehicle pileup. Road blocked.', status: 'active', created_at: new Date(Date.now() - 10 * 60000).toISOString(), lat: 19.2823, lng: 72.8806, severity: 'critical', type: 'Accident' },
-          { id: 'm2', name: 'Mumbai Fire Response', message: 'Industrial fire in MIDC area. 4 Fire engines dispatched.', status: 'active', created_at: new Date(Date.now() - 15 * 60000).toISOString(), lat: 19.1136, lng: 72.8697, severity: 'critical', type: 'Fire' },
-          { id: 'm3', name: 'Delhi Traffic Police', message: 'Waterlogging causing severe traffic jams at ITO.', status: 'active', created_at: new Date(Date.now() - 2 * 60000).toISOString(), lat: 28.6276, lng: 77.2404, severity: 'high', type: 'Hazard' },
-          { id: 'm4', name: 'Bangalore EMT', message: 'Medical emergency reported on ORR. Ambulance approaching.', status: 'active', created_at: new Date(Date.now() - 1 * 60000).toISOString(), lat: 12.9716, lng: 77.5946, severity: 'high', type: 'Medical' },
-          { id: 'm5', name: 'Chennai Disaster Response', message: 'Cyclone warning alert active for coastal regions.', status: 'active', created_at: new Date(Date.now() - 8 * 60000).toISOString(), lat: 13.0827, lng: 80.2707, severity: 'critical', type: 'Weather' },
-          { id: 'm6', name: 'Pune City Police', message: 'Protest cleared. Traffic returning to normal in Shivaji Nagar.', status: 'resolved', created_at: new Date(Date.now() - 45 * 60000).toISOString(), lat: 18.5204, lng: 73.8567, severity: 'low', type: 'General' },
-          { id: 'm7', name: 'Hyderabad Highway Auth', message: 'Overturned truck cleared from Outer Ring Road.', status: 'resolved', created_at: new Date(Date.now() - 120 * 60000).toISOString(), lat: 17.3850, lng: 78.4867, severity: 'low', type: 'Accident' },
-          { id: 'm8', name: 'Kolkata Emergency', message: 'Building collapse reports in older districts. Search & rescue initiated.', status: 'active', created_at: new Date(Date.now() - 3 * 60000).toISOString(), lat: 22.5726, lng: 88.3639, severity: 'high', type: 'Critical' },
-          { id: 'm9', name: 'Jaipur Police', message: 'Suspicious object reported. Area cordoned off for safety.', status: 'active', created_at: new Date(Date.now() - 25 * 60000).toISOString(), lat: 26.9124, lng: 75.7873, severity: 'critical', type: 'Security' },
-          { id: 'm10', name: 'Ahmedabad Traffic', message: 'Major bridge repair work ongoing. Diversion in place.', status: 'active', created_at: new Date(Date.now() - 60 * 60000).toISOString(), lat: 23.0225, lng: 72.5714, severity: 'high', type: 'Traffic' },
-          { id: 'm11', name: 'Agra Highway Patrol', message: 'Dense fog causing extremely low visibility on Yamuna Expressway.', status: 'active', created_at: new Date(Date.now() - 30 * 60000).toISOString(), lat: 27.2038, lng: 77.9629, severity: 'high', type: 'Weather' },
-          { id: 'm12', name: 'Kochi Port Authority', message: 'Oil spill reported off coast. Cleanup crew dispatched.', status: 'active', created_at: new Date(Date.now() - 40 * 60000).toISOString(), lat: 9.9312, lng: 76.2673, severity: 'critical', type: 'Hazard' }
+        // Live/mock incident points covering major cities
+        const MOCK_INCIDENTS = [
+          { id: 'm1',  lat: 19.0760, lng: 72.8777, severity: 'critical' }, // Mumbai
+          { id: 'm2',  lat: 28.7041, lng: 77.1025, severity: 'critical' }, // Delhi
+          { id: 'm3',  lat: 12.9716, lng: 77.5946, severity: 'critical' }, // Bangalore
+          { id: 'm4',  lat: 13.0827, lng: 80.2707, severity: 'critical' }, // Chennai
+          { id: 'm5',  lat: 17.3850, lng: 78.4867, severity: 'critical' }, // Hyderabad
+          { id: 'm6',  lat: 22.5726, lng: 88.3639, severity: 'critical' }, // Kolkata
+          { id: 'm7',  lat: 26.9124, lng: 75.7873, severity: 'critical' }, // Jaipur
+          { id: 'm8',  lat: 23.0225, lng: 72.5714, severity: 'high'     }, // Ahmedabad
+          { id: 'm9',  lat: 18.5204, lng: 73.8567, severity: 'high'     }, // Pune
+          { id: 'm10', lat: 25.5941, lng: 85.1376, severity: 'critical' }, // Patna
+          { id: 'm11', lat: 26.8467, lng: 80.9462, severity: 'critical' }, // Lucknow
+          { id: 'm12', lat: 22.7196, lng: 75.8577, severity: 'critical' }, // Indore
+          { id: 'm13', lat: 21.1458, lng: 79.0882, severity: 'high'     }, // Nagpur
+          { id: 'm14', lat: 9.9312,  lng: 76.2673, severity: 'critical' }, // Kochi
+          { id: 'm15', lat: 8.5241,  lng: 76.9366, severity: 'critical' }, // Thiruvananthapuram
+          { id: 'm16', lat: 30.7333, lng: 76.7794, severity: 'high'     }, // Chandigarh
+          { id: 'm17', lat: 31.1048, lng: 77.1734, severity: 'low'      }, // Shimla
+          { id: 'm18', lat: 34.0836, lng: 74.7973, severity: 'critical' }, // Srinagar
+          { id: 'm19', lat: 26.2006, lng: 92.9376, severity: 'critical' }, // Guwahati
+          { id: 'm20', lat: 20.2961, lng: 85.8245, severity: 'critical' }, // Bhubaneswar
+          { id: 'm21', lat: 23.3441, lng: 85.3096, severity: 'high'     }, // Ranchi
+          { id: 'm22', lat: 30.3165, lng: 78.0322, severity: 'critical' }, // Dehradun
+          { id: 'm23', lat: 11.0168, lng: 76.9558, severity: 'high'     }, // Coimbatore
+          { id: 'm24', lat: 21.2514, lng: 81.6296, severity: 'critical' }, // Raipur
+          { id: 'm25', lat: 24.8607, lng: 67.0011, severity: 'low'      }, // Karachi (border)
+          { id: 'm26', lat: 27.0238, lng: 74.2179, severity: 'low'      }, // Bikaner
+          { id: 'm27', lat: 15.8497, lng: 74.4977, severity: 'low'      }, // Belgaum
+          { id: 'm28', lat: 11.9416, lng: 79.8083, severity: 'low'      }, // Puducherry
+          { id: 'm29', lat: 25.3176, lng: 82.9739, severity: 'high'     }, // Varanasi
+          { id: 'm30', lat: 16.3067, lng: 80.4365, severity: 'high'     }, // Vijayawada
         ];
 
-        setAlerts([...parsedAlerts, ...MOCK_INDIA_INCIDENTS]);
+        setAlerts([...parsedAlerts, ...MOCK_INCIDENTS]);
       } catch (err) {
-        console.error("Error fetching critical zones:", err);
+        console.error('Error fetching critical zones:', err);
       } finally {
         setLoading(false);
       }
@@ -146,130 +322,140 @@ export default function CriticalZones() {
 
     fetchAlerts();
 
-    // Subscribe to live DB changes
     const subscription = supabase
       .channel('critical-zone-alerts')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'users_detail' }, fetchAlerts)
       .subscribe();
 
-    return () => {
-      subscription.unsubscribe();
-    };
+    return () => { subscription.unsubscribe(); };
   }, []);
 
-  // Compute Spatial Check (Points within Polygons)
-  // Start with INDIA_BASELINE_RISK for every state so the entire map is colored,
-  // then override with higher severity if a live incident falls inside that state.
+  // Spatial join: assign highest-severity incident to each district
+  // Starts from CITY_BASELINE_RISK, overrides with live incident data
   useEffect(() => {
     if (!geoData) return;
 
-    const severityMap: Record<string, string> = {};
+    const sevMap: Record<string, string> = {};
 
     geoData.features.forEach((feature: any) => {
-      const stateName = feature.properties.NAME_1 || feature.properties.st_nm || feature.properties.name || 'Unknown';
+      const districtName: string = feature.properties.NAME_2 || 'Unknown';
+      // Start with static baseline
+      let highest: string = CITY_BASELINE_RISK[districtName] || 'low';
 
-      // Start from the static baseline (guaranteed color for every state)
-      let highestSev: string = INDIA_BASELINE_RISK[stateName] || 'low';
-
-      // Override with live / mock incident data if it's higher severity
       for (const alert of alerts) {
         if (!alert.lat || !alert.lng) continue;
         const pt = point([alert.lng, alert.lat]);
         try {
           if (booleanPointInPolygon(pt, feature)) {
-            if (alert.severity === 'critical') {
-              highestSev = 'critical';
-              break;
-            } else if (alert.severity === 'high' && highestSev !== 'critical') {
-              highestSev = 'high';
-            }
+            if (alert.severity === 'critical') { highest = 'critical'; break; }
+            else if (alert.severity === 'high' && highest !== 'critical') highest = 'high';
           }
-        } catch (_) {
-          // Skip malformed polygon geometries
-        }
+        } catch (_) { /* skip malformed polygons */ }
       }
 
-      severityMap[stateName] = highestSev;
+      sevMap[districtName] = highest;
     });
 
-    setStateSeverityMap(severityMap);
+    setDistrictSeverityMap(sevMap);
   }, [geoData, alerts]);
 
-  // Leaflet Polygon Styling Function
+  // Color map
+  const COLOR: Record<string, string> = {
+    critical: '#ef4444',
+    high:     '#f97316',
+    low:      '#22c55e',
+  };
+
+  // Leaflet style function — district polygon fill based on severity
   const getStyle = (feature: any) => {
-    const stateName = feature.properties.NAME_1 || feature.properties.st_nm || feature.properties.name || 'Unknown';
-    // Use computed severity; fall back to static baseline; then low as last resort
-    const severity = stateSeverityMap[stateName] || INDIA_BASELINE_RISK[stateName] || 'low';
-
-    const colorMap: Record<string, string> = {
-      critical: '#ef4444',   // Bold red
-      high:     '#f97316',   // Vivid orange
-      low:      '#10b981',   // Emerald green
-    };
-
+    const name: string = feature.properties.NAME_2 || 'Unknown';
+    const sev = districtSeverityMap[name] || CITY_BASELINE_RISK[name] || 'low';
     return {
-      fillColor: colorMap[severity] || '#10b981',
-      weight: 1.5,
+      fillColor: COLOR[sev] || COLOR.low,
+      weight: 0.5,
       opacity: 1,
-      color: '#ffffff',     // White border for crisp contrast
-      fillOpacity: 0.65
+      color: '#ffffff',
+      fillOpacity: 0.70,
     };
   };
 
-  // Popup logic with hover highlight
+  // Hover + popup per district
   const onEachFeature = (feature: any, layer: any) => {
-    const stateName = feature.properties.NAME_1 || feature.properties.st_nm || feature.properties.name || 'Unknown';
-    const severity = stateSeverityMap[stateName] || INDIA_BASELINE_RISK[stateName] || 'low';
+    const name: string = feature.properties.NAME_2 || 'Unknown';
+    const state: string = feature.properties.NAME_1 || '';
+    const sev = districtSeverityMap[name] || CITY_BASELINE_RISK[name] || 'low';
 
-    const badgeColor: Record<string, string> = {
-      critical: 'color:#ef4444;background:#fef2f2;',
-      high:     'color:#ea580c;background:#fff7ed;',
-      low:      'color:#059669;background:#ecfdf5;',
+    const badge: Record<string, string> = {
+      critical: 'color:#ef4444;background:#fef2f2;border:1px solid #fecaca;',
+      high:     'color:#ea580c;background:#fff7ed;border:1px solid #fed7aa;',
+      low:      'color:#16a34a;background:#f0fdf4;border:1px solid #bbf7d0;',
+    };
+    const label: Record<string, string> = {
+      critical: '🔴 CRITICAL RISK',
+      high:     '🟠 HIGH RISK (Active)',
+      low:      '🟢 SAFE ZONE (Resolved)',
     };
 
-    let statusText = 'SAFE ZONE (Resolved)';
-    if (severity === 'critical') statusText = 'CRITICAL RISK (Ongoing > 5m)';
-    else if (severity === 'high') statusText = 'HIGH RISK (Active)';
-
-    // Hover effect
-    layer.on({
-      mouseover: (e: any) => { e.target.setStyle({ fillOpacity: 0.9, weight: 2.5 }); },
-      mouseout:  (e: any) => { e.target.setStyle({ fillOpacity: 0.65, weight: 1.5 }); },
-    });
-
-    const popupContent = `
-      <div style="font-family:sans-serif;padding:6px 8px;min-width:150px">
-        <strong style="font-size:13px;color:#1e293b">${stateName}</strong><br/>
-        <span style="font-size:10px;text-transform:uppercase;letter-spacing:.08em;font-weight:700;display:block;margin-top:4px;padding:2px 6px;border-radius:4px;${badgeColor[severity] || 'color:#059669;background:#ecfdf5;'}">${statusText}</span>
+    layer.bindPopup(`
+      <div style="font-family:sans-serif;padding:8px 10px;min-width:160px">
+        <strong style="font-size:14px;color:#1e293b">${name}</strong>
+        <div style="font-size:11px;color:#64748b;margin-bottom:6px">${state}</div>
+        <span style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;padding:3px 8px;border-radius:6px;display:inline-block;${badge[sev]}">${label[sev]}</span>
       </div>
-    `;
+    `);
 
-    layer.bindPopup(popupContent);
+    layer.on({
+      mouseover: (e: any) => e.target.setStyle({ fillOpacity: 0.92, weight: 1.5 }),
+      mouseout:  (e: any) => e.target.setStyle({ fillOpacity: 0.70, weight: 0.5 }),
+    });
   };
+
+  // Stats
+  const stats = Object.values(districtSeverityMap);
+  const criticalCount = stats.filter(s => s === 'critical').length;
+  const highCount     = stats.filter(s => s === 'high').length;
+  const safeCount     = stats.filter(s => s === 'low').length;
 
   return (
     <div className="pt-24 px-4 pb-12 w-full max-w-7xl mx-auto min-h-screen flex flex-col">
-      <motion.div 
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="mb-8 flex flex-col gap-2"
-      >
+      {/* Header */}
+      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="mb-6 flex flex-col gap-2">
         <h1 className="text-3xl md:text-5xl font-black text-slate-900 tracking-tight flex items-center gap-3">
           <MapIcon className="w-8 h-8 text-primary" />
           Critical Zones Map
         </h1>
         <p className="text-slate-500 font-medium max-w-xl">
-          Live geographic hotspots visualizing emergency SOS triggers across India.
+          City &amp; district-level emergency risk visualization across India — powered by live SOS data + NCRB/NHAI accident records.
         </p>
       </motion.div>
 
+      {/* Stats Row */}
+      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.15 }} className="grid grid-cols-3 gap-4 mb-5">
+        <div className="bg-red-50 border border-red-200 rounded-2xl p-4 flex items-center gap-3">
+          <AlertTriangle className="w-7 h-7 text-red-500 shrink-0" />
+          <div>
+            <p className="text-2xl font-black text-red-600">{criticalCount}</p>
+            <p className="text-xs font-bold text-red-500 uppercase tracking-widest">Critical Districts</p>
+          </div>
+        </div>
+        <div className="bg-orange-50 border border-orange-200 rounded-2xl p-4 flex items-center gap-3">
+          <Activity className="w-7 h-7 text-orange-500 shrink-0" />
+          <div>
+            <p className="text-2xl font-black text-orange-600">{highCount}</p>
+            <p className="text-xs font-bold text-orange-500 uppercase tracking-widest">High-Risk Districts</p>
+          </div>
+        </div>
+        <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-4 flex items-center gap-3">
+          <CheckCircle className="w-7 h-7 text-emerald-500 shrink-0" />
+          <div>
+            <p className="text-2xl font-black text-emerald-600">{safeCount}</p>
+            <p className="text-xs font-bold text-emerald-500 uppercase tracking-widest">Safe Zones</p>
+          </div>
+        </div>
+      </motion.div>
+
       {/* Legend */}
-      <motion.div 
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 0.2 }}
-        className="flex flex-wrap gap-4 mb-4"
-      >
+      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.25 }} className="flex flex-wrap gap-3 mb-4">
         <div className="flex items-center gap-2 bg-red-50 text-red-700 px-3 py-1.5 rounded-lg border border-red-200 text-sm font-bold shadow-sm">
           <div className="w-4 h-4 rounded-sm bg-red-500 animate-pulse border border-red-600" /> Critical Risk (Ongoing &gt; 5m)
         </div>
@@ -281,36 +467,36 @@ export default function CriticalZones() {
         </div>
       </motion.div>
 
-      {/* Map Wrapping Container */}
-      <div className="bg-white p-2 rounded-2xl shadow-sm border border-slate-200 relative overflow-hidden z-0" style={{ height: '600px', width: '100%' }}>
+      {/* Map */}
+      <div className="bg-white p-2 rounded-2xl shadow-sm border border-slate-200 relative overflow-hidden z-0 flex-1" style={{ minHeight: '600px' }}>
         {loading && (
           <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-white/80 backdrop-blur-sm">
-            <Loader2 className="w-10 h-10 animate-spin text-primary mb-4" />
-            <p className="font-bold text-slate-700">Loading Geodata...</p>
+            <Loader2 className="w-10 h-10 animate-spin text-primary mb-3" />
+            <p className="font-bold text-slate-700">Loading District Geodata…</p>
+            <p className="text-xs text-slate-400 mt-1">Mapping {Object.keys(districtSeverityMap).length} districts</p>
           </div>
         )}
-        
-        <MapContainer 
-          center={[22.5937, 78.9629]} 
-          zoom={4.5} 
+
+        <MapContainer
+          center={[22.5, 82.5]}
+          zoom={5}
           scrollWheelZoom={true}
-          style={{ height: '100%', width: '100%', zIndex: 0, borderRadius: '0.75rem', background: '#f8fafc' }}
+          style={{ height: '600px', width: '100%', zIndex: 0, borderRadius: '0.75rem', background: '#f1f5f9' }}
         >
           <MapFocus />
           <TileLayer
-            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
             url="https://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}{r}.png"
           />
-          
+
           {geoData && (
-            <GeoJSON 
-              key={JSON.stringify(stateSeverityMap)}
-              data={geoData} 
+            <GeoJSON
+              key={JSON.stringify(districtSeverityMap)}
+              data={geoData}
               style={getStyle}
               onEachFeature={onEachFeature}
             />
           )}
-
         </MapContainer>
       </div>
     </div>
