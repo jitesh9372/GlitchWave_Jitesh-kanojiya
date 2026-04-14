@@ -198,6 +198,18 @@ const Navbar = ({ darkMode, toggleDarkMode, user, currentLanguage, setLanguage }
                     <LayoutDashboard className="w-5 h-5" />
                     {t.dashboard}
                   </Link>
+                  <Link to="/analytics" onClick={() => setIsOpen(false)} className={cn("block px-4 py-3 rounded-2xl text-base font-bold transition-colors flex items-center gap-2", isActive('/analytics') ? "bg-primary/10 text-primary" : "text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800")}>
+                    <Activity className="w-5 h-5" />
+                    Risk Analytics
+                  </Link>
+                  <Link to="/critical-zones" onClick={() => setIsOpen(false)} className={cn("block px-4 py-3 rounded-2xl text-base font-bold transition-colors flex items-center gap-2", isActive('/critical-zones') ? "bg-primary/10 text-primary" : "text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800")}>
+                    <MapIcon className="w-5 h-5" />
+                    Critical Zones
+                  </Link>
+                  <Link to="/map" onClick={() => setIsOpen(false)} className={cn("block px-4 py-3 rounded-2xl text-base font-bold transition-colors flex items-center gap-2", isActive('/map') ? "bg-primary/10 text-primary" : "text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800")}>
+                    <MapPin className="w-5 h-5" />
+                    Live Map
+                  </Link>
                   <div className="px-4 py-3 border-t border-slate-100 dark:border-slate-800 mt-2">
                     <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Language</p>
                     <div className="grid grid-cols-3 gap-2">
@@ -1651,7 +1663,7 @@ export default function App() {
 
   return (
     <Router>
-      <div className="min-h-screen transition-colors">
+      <div className="min-h-screen transition-colors pb-16 md:pb-0 flex flex-col relative">
         <video ref={videoRef} autoPlay playsInline muted className="hidden" />
         <Navbar 
           darkMode={darkMode} 
@@ -1835,14 +1847,57 @@ export default function App() {
         </footer>
 
         {/* Floating SOS (Mobile Only) */}
-        <div className="fixed bottom-6 right-6 md:hidden z-40">
-          <button 
-            onClick={() => window.location.href = `tel:${APP_CONFIG.EMERGENCY_NUMBERS.GENERAL}`}
-            className="w-16 h-16 bg-primary rounded-full shadow-2xl flex items-center justify-center text-white animate-sos"
-          >
-            <Shield className="w-8 h-8" />
-          </button>
-        </div>
+        {/* ── Mobile Bottom Navigation Bar ─────────────────────────── */}
+        {user && (
+          <nav className="fixed bottom-0 left-0 right-0 z-50 md:hidden bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border-t border-slate-200 dark:border-slate-800 safe-area-bottom">
+            <div className="grid grid-cols-5 h-16">
+              {/* Home */}
+              <Link to="/" className={cn(
+                "flex flex-col items-center justify-center gap-0.5 text-[10px] font-bold transition-colors",
+                location.pathname === '/' ? 'text-primary' : 'text-slate-400 dark:text-slate-500'
+              )}>
+                <Shield className="w-5 h-5" />
+                <span>Home</span>
+              </Link>
+
+              {/* Dashboard */}
+              <Link to="/dashboard" className={cn(
+                "flex flex-col items-center justify-center gap-0.5 text-[10px] font-bold transition-colors",
+                location.pathname === '/dashboard' ? 'text-primary' : 'text-slate-400 dark:text-slate-500'
+              )}>
+                <LayoutDashboard className="w-5 h-5" />
+                <span>Dashboard</span>
+              </Link>
+
+              {/* Live Map */}
+              <Link to="/map" className={cn(
+                "flex flex-col items-center justify-center gap-0.5 text-[10px] font-bold transition-colors",
+                location.pathname === '/map' ? 'text-primary' : 'text-slate-400 dark:text-slate-500'
+              )}>
+                <MapPin className="w-5 h-5" />
+                <span>Live Map</span>
+              </Link>
+
+              {/* Analytics */}
+              <Link to="/analytics" className={cn(
+                "flex flex-col items-center justify-center gap-0.5 text-[10px] font-bold transition-colors",
+                location.pathname === '/analytics' ? 'text-primary' : 'text-slate-400 dark:text-slate-500'
+              )}>
+                <Activity className="w-5 h-5" />
+                <span>Analytics</span>
+              </Link>
+
+              {/* Critical Zones */}
+              <Link to="/critical-zones" className={cn(
+                "flex flex-col items-center justify-center gap-0.5 text-[10px] font-bold transition-colors",
+                location.pathname === '/critical-zones' ? 'text-primary' : 'text-slate-400 dark:text-slate-500'
+              )}>
+                <MapIcon className="w-5 h-5" />
+                <span>Zones</span>
+              </Link>
+            </div>
+          </nav>
+        )}
       </div>
     </Router>
   );
