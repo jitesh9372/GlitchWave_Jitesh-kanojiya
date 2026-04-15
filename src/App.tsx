@@ -257,6 +257,54 @@ const Navbar = ({ darkMode, toggleDarkMode, user, currentLanguage, setLanguage }
   );
 };
 
+const MobileBottomNav = React.memo(() => {
+  const location = useLocation();
+
+  const navItems = [
+    { path: '/', label: 'Home', icon: Shield },
+    { path: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+    { path: '/map', label: 'Live Map', icon: MapPin },
+    { path: '/analytics', label: 'Analytics', icon: Activity },
+    { path: '/critical-zones', label: 'Zones', icon: MapIcon }
+  ];
+
+  return (
+    <nav className="fixed bottom-0 left-0 right-0 z-50 md:hidden bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border-t border-slate-200 dark:border-slate-800 safe-area-bottom">
+      <div className="flex justify-between items-center h-16 px-2">
+        {navItems.map((item) => {
+          const isActive = location.pathname === item.path;
+          return (
+            <Link
+              key={item.path}
+              to={item.path}
+              className={cn(
+                "relative flex flex-col items-center justify-center w-full h-full gap-1 transition-colors duration-300",
+                isActive ? 'text-primary' : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300'
+              )}
+            >
+              {/* Animated Active Pill */}
+              {isActive && (
+                <motion.div
+                  layoutId="mobile-nav-pill"
+                  className="absolute inset-0 bg-primary/10 rounded-2xl m-1"
+                  transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
+                />
+              )}
+              
+              <div className="relative z-10 flex flex-col items-center">
+                <item.icon className={cn("w-5 h-5 transition-transform duration-300", isActive && "scale-110 mb-0.5")} />
+                <span className={cn("text-[10px] font-bold tracking-wide transition-all duration-300", isActive ? "opacity-100" : "opacity-70")}>
+                  {item.label}
+                </span>
+              </div>
+            </Link>
+          );
+        })}
+      </div>
+    </nav>
+  );
+});
+
 const FeatureCard = React.memo(({ icon: Icon, title, description, active, onClick, theme = "primary" }: { icon: any, title: string, description: string, active?: boolean, onClick?: () => void, theme?: "primary" | "emerald" | "purple" | "blue" }) => {
   const themes = {
     primary: {
@@ -2005,54 +2053,7 @@ export default function App() {
         {/* Floating SOS (Mobile Only) */}
         {/* ── Mobile Bottom Navigation Bar ─────────────────────────── */}
         {user && (
-          <nav className="fixed bottom-0 left-0 right-0 z-50 md:hidden bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border-t border-slate-200 dark:border-slate-800 safe-area-bottom">
-            <div className="grid grid-cols-5 h-16">
-              {/* Home */}
-              <Link to="/" className={cn(
-                "flex flex-col items-center justify-center gap-0.5 text-[10px] font-bold transition-colors",
-                window.location.pathname === '/' ? 'text-primary' : 'text-slate-400 dark:text-slate-500'
-              )}>
-                <Shield className="w-5 h-5" />
-                <span>Home</span>
-              </Link>
-
-              {/* Dashboard */}
-              <Link to="/dashboard" className={cn(
-                "flex flex-col items-center justify-center gap-0.5 text-[10px] font-bold transition-colors",
-                window.location.pathname === '/dashboard' ? 'text-primary' : 'text-slate-400 dark:text-slate-500'
-              )}>
-                <LayoutDashboard className="w-5 h-5" />
-                <span>Dashboard</span>
-              </Link>
-
-              {/* Live Map */}
-              <Link to="/map" className={cn(
-                "flex flex-col items-center justify-center gap-0.5 text-[10px] font-bold transition-colors",
-                window.location.pathname === '/map' ? 'text-primary' : 'text-slate-400 dark:text-slate-500'
-              )}>
-                <MapPin className="w-5 h-5" />
-                <span>Live Map</span>
-              </Link>
-
-              {/* Analytics */}
-              <Link to="/analytics" className={cn(
-                "flex flex-col items-center justify-center gap-0.5 text-[10px] font-bold transition-colors",
-                window.location.pathname === '/analytics' ? 'text-primary' : 'text-slate-400 dark:text-slate-500'
-              )}>
-                <Activity className="w-5 h-5" />
-                <span>Analytics</span>
-              </Link>
-
-              {/* Critical Zones */}
-              <Link to="/critical-zones" className={cn(
-                "flex flex-col items-center justify-center gap-0.5 text-[10px] font-bold transition-colors",
-                window.location.pathname === '/critical-zones' ? 'text-primary' : 'text-slate-400 dark:text-slate-500'
-              )}>
-                <MapIcon className="w-5 h-5" />
-                <span>Zones</span>
-              </Link>
-            </div>
-          </nav>
+          <MobileBottomNav />
         )}
       </div>
     </Router>
