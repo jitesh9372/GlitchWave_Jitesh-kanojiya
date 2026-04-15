@@ -20,9 +20,20 @@ export default function RiskAnalytics() {
 
   const [trendData, setTrendData] = useState<any[]>([]);
   const [riskData, setRiskData] = useState<any[]>([]);
+  const [activeAlertsList, setActiveAlertsList] = useState<any[]>([]);
 
   useEffect(() => {
     fetchEmergencyData();
+
+    // Subscribe to real-time changes
+    const subscription = supabase
+      .channel('risk-analytics-alerts')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'users_detail' }, fetchEmergencyData)
+      .subscribe();
+
+    return () => {
+      subscription.unsubscribe();
+    };
   }, []);
 
   const fetchEmergencyData = async () => {
@@ -43,6 +54,8 @@ export default function RiskAnalytics() {
       let criticalCount = 0;
       let highCount = 0;
       let lowCount = 0;
+      
+      const activeAlerts: any[] = [];
 
       const dateMap: { [key: string]: number } = {};
 
@@ -56,11 +69,14 @@ export default function RiskAnalytics() {
           activeCount++;
           // Basic heuristic for demo: if it has been active for more than 5 minutes, it's critical
           const ageInMinutes = (new Date().getTime() - new Date(alert.created_at).getTime()) / 60000;
+          let riskLevel = 'HIGH';
           if (ageInMinutes > 5) {
             criticalCount++;
+            riskLevel = 'CRITICAL';
           } else {
             highCount++;
           }
+          activeAlerts.push({ ...alert, riskLevel, ageInMinutes: Math.floor(ageInMinutes) });
         }
 
         // Group by Date for trend
@@ -76,6 +92,8 @@ export default function RiskAnalytics() {
         highRisk: highCount,
         lowRisk: lowCount
       });
+      
+      setActiveAlertsList(activeAlerts.sort((a, b) => b.ageInMinutes - a.ageInMinutes));
 
       // Prepare trend data (last 7 days usually)
       const formattedTrend = Object.keys(dateMap).map(date => ({
@@ -236,17 +254,23 @@ export default function RiskAnalytics() {
                      </tr>
                    </thead>
                    <tbody className="divide-y divide-slate-100">
-                     {metrics.active === 0 ? (
+                     {activeAlertsList.length === 0 ? (
                         <tr>
                            <td colSpan={4} className="px-4 py-8 text-center text-slate-400 font-medium">No pending alerts currently active.</td>
                         </tr>
                      ) : (
-                        <tr className="hover:bg-slate-50 transition-colors">
-                           <td className="px-4 py-3 font-semibold text-slate-800">Available live in Prod Database</td>
-                           <td className="px-4 py-3 font-mono text-xs">Lat/Lng Data</td>
-                           <td className="px-4 py-3">Current</td>
-                           <td className="px-4 py-3"><span className="px-2 py-1 bg-red-100 text-red-700 text-xs rounded font-bold">CRITICAL</span></td>
-                        </tr>
+                        activeAlertsList.map((alert) => (
+                          <tr key={alert.id} className="hover:bg-slate-50 transition-colors">
+                             <td className="px-4 py-3 font-semibold text-slate-800">{alert.name || 'Anonymous User'} <br/><span className="text-xs text-slate-500 font-normal">{alert.phone || ''}</span></td>
+                             <td className="px-4 py-3 font-mono text-xs">{alert.location || 'Unknown'}</td>
+                             <td className="px-4 py-3">{alert.ageInMinutes} min</td>
+                             <td className="px-4 py-3">
+                               <span className={`px-2 py-1 text-xs rounded font-bold ${alert.riskLevel === 'CRITICAL' ? 'bg-red-100 text-red-700' : 'bg-orange-100 text-orange-700'}`}>
+                                 {alert.riskLevel}
+                               </span>
+                             </td>
+                          </tr>
+                        ))
                      )}
                    </tbody>
                 </table>
