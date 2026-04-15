@@ -54,5 +54,5 @@
 }
 
 .map-tiles-dark-blue {
-  filter: invert(100%) hue-rotate(180deg) brightness(75%) contrast(1.2) saturate(1.4) sepia(20%) hue-rotate(190deg);
+  filter: invert(100%) hue-rotate(180deg) brightness(95%) contrast(1.1) opacity(0.85);
 }

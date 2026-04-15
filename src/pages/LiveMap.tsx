@@ -174,10 +174,10 @@ export default function LiveMap({ activeAlertId, location }: LiveMapProps) {
         >
           <MapController center={center} />
           
-          {/* Bright and highly visible modern map styling */}
+          {/* Google Maps dual-language tiles formatted for dark mode */}
           <TileLayer
-            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
-            url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
+            attribution='&copy; Google Maps'
+            url="https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}"
             className="map-tiles-dark-blue"
           />
 
