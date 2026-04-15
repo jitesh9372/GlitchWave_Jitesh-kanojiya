@@ -253,7 +253,7 @@ export const Chatbot: React.FC<ChatbotProps> = ({ currentLanguage }) => {
   const isSendDisabled = isLoading || !input.trim() || retryCountdown > 0;
 
   return (
-    <div className="fixed bottom-6 right-6 z-50 flex flex-col items-end">
+    <div className="fixed bottom-24 md:bottom-6 right-6 z-50 flex flex-col items-end">
       <AnimatePresence>
         {isOpen && (
           <motion.div
