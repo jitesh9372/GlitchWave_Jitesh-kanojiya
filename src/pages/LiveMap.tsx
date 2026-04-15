@@ -165,7 +165,7 @@ export default function LiveMap({ activeAlertId, location }: LiveMapProps) {
       </div>
 
       {/* Map Container */}
-      <div className="relative flex-1 z-0 w-full" style={{ minHeight: 'calc(100dvh - 5rem)' }}>
+      <div className="relative flex-1 z-0 w-full h-[calc(100dvh-5rem)]">
         <MapContainer
           center={[center.lat, center.lng]}
           zoom={13}
