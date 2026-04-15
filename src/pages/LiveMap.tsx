@@ -93,21 +93,19 @@ export default function LiveMap({ activeAlertId, location }: LiveMapProps) {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("User not authenticated");
 
-      const snapshotData = {
-        timestamp: new Date().toISOString(),
-        location: userLocation,
-        userAgent: navigator.userAgent,
-        accuracy: "high"
-      };
+      const { error } = await supabase
+        .from('location_snapshots')
+        .insert([
+          {
+            user_id: user.id,
+            latitude: userLocation.lat,
+            longitude: userLocation.lng,
+            accuracy: "high",
+            user_agent: navigator.userAgent
+          }
+        ]);
 
-      const blob = new Blob([JSON.stringify(snapshotData, null, 2)], { type: 'application/json' });
-      
-      await uploadFile({
-        featureName: 'location-snapshots',
-        itemId: 'snapshot-' + Date.now(),
-        file: blob,
-        userId: user.id
-      });
+      if (error) throw error;
 
       setSnapshotSuccess(true);
       setTimeout(() => setSnapshotSuccess(false), 3000);
