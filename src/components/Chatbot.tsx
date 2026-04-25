@@ -121,6 +121,8 @@ async function callPollinations(
     { role: 'user', content: userMessage },
   ];
 
+  // This is the URL for the free AI fallback service (acts as an OpenAI/GPT alternative)
+  // No API key is required for this service.
   const res = await fetch('https://text.pollinations.ai/', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },

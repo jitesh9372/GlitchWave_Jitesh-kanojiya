@@ -159,7 +159,7 @@ export default function Dashboard({
         .from('users_detail')
         .select('*')
         .eq('user_id', session.user.id)
-        .in('feature_type', ['alert', 'alert_update'])
+        .eq('feature_type', 'alert')
         .order('created_at', { ascending: false });
 
       if (activitiesError) console.error('Error fetching activities:', activitiesError);
@@ -189,15 +189,17 @@ export default function Dashboard({
       if (contactsError) console.error('Error fetching contacts:', contactsError);
       else {
         const contactsWithUrls = await Promise.all((contactsData || []).map(async (c) => {
-          if (c.message && c.message.startsWith(session.user.id)) {
+          let parsedMsg: any = {};
+          try { parsedMsg = JSON.parse(c.message || '{}'); } catch(e) { parsedMsg = { photo_path: c.message }; }
+          if (parsedMsg.photo_path && parsedMsg.photo_path.startsWith(session.user.id)) {
             try {
-              const url = await getSignedUrl(c.message);
-              return { ...c, photo_url: url };
+              const url = await getSignedUrl(parsedMsg.photo_path);
+              return { ...c, photo_url: url, relation: parsedMsg.relation, phone: parsedMsg.phone, photo_path: parsedMsg.photo_path };
             } catch (e) {
-              return c;
+              return { ...c, relation: parsedMsg.relation, phone: parsedMsg.phone, photo_path: parsedMsg.photo_path };
             }
           }
-          return c;
+          return { ...c, relation: parsedMsg.relation, phone: parsedMsg.phone, photo_path: parsedMsg.photo_path };
         }));
         setContacts(contactsWithUrls);
       }
@@ -260,15 +262,17 @@ export default function Dashboard({
     if (error) console.error('Error fetching contacts:', error);
     else {
       const contactsWithUrls = await Promise.all((data || []).map(async (c) => {
-        if (c.message && c.message.startsWith(user.id)) {
+        let parsedMsg: any = {};
+        try { parsedMsg = JSON.parse(c.message || '{}'); } catch(e) { parsedMsg = { photo_path: c.message }; }
+        if (parsedMsg.photo_path && parsedMsg.photo_path.startsWith(user.id)) {
           try {
-            const url = await getSignedUrl(c.message);
-            return { ...c, photo_url: url };
+            const url = await getSignedUrl(parsedMsg.photo_path);
+            return { ...c, photo_url: url, relation: parsedMsg.relation, phone: parsedMsg.phone, photo_path: parsedMsg.photo_path };
           } catch (e) {
-            return c;
+            return { ...c, relation: parsedMsg.relation, phone: parsedMsg.phone, photo_path: parsedMsg.photo_path };
           }
         }
-        return c;
+        return { ...c, relation: parsedMsg.relation, phone: parsedMsg.phone, photo_path: parsedMsg.photo_path };
       }));
       setContacts(contactsWithUrls);
     }
@@ -356,9 +360,11 @@ export default function Dashboard({
 
     const contactData = {
       name: contactFormData.name,
-      relation: contactFormData.relation,
-      phone: contactFormData.phone,
-      message: contactFormData.photo_path, // Storing photo path in message field
+      message: JSON.stringify({
+        relation: contactFormData.relation,
+        phone: contactFormData.phone,
+        photo_path: contactFormData.photo_path
+      }),
       user_id: user.id,
       feature_type: 'contact'
     };
@@ -394,8 +400,12 @@ export default function Dashboard({
 
   const handleDeleteContact = async (contact: any) => {
     try {
-      if (contact.message) {
-        await deleteFile(contact.message);
+      let photoPath = contact.photo_path;
+      if (!photoPath && contact.message) {
+        try { photoPath = JSON.parse(contact.message).photo_path; } catch(e) { photoPath = contact.message; }
+      }
+      if (photoPath) {
+        await deleteFile(photoPath);
       }
 
       const { error } = await supabase
@@ -412,15 +422,18 @@ export default function Dashboard({
 
   const openContactModal = async (contact: any = null) => {
     if (contact) {
+      let parsedMsg: any = {};
+      try { parsedMsg = JSON.parse(contact.message || '{}'); } catch(e) { parsedMsg = { photo_path: contact.message }; }
+      
       setEditingContact(contact);
       setContactFormData({ 
         name: contact.name, 
-        relation: contact.relation, 
-        phone: contact.phone,
-        photo_path: contact.message || ''
+        relation: contact.relation || parsedMsg.relation, 
+        phone: contact.phone || parsedMsg.phone,
+        photo_path: parsedMsg.photo_path || ''
       });
-      if (contact.message) {
-        const url = await getSignedUrl(contact.message);
+      if (parsedMsg.photo_path) {
+        const url = await getSignedUrl(parsedMsg.photo_path);
         setContactPhotoUrl(url);
       } else {
         setContactPhotoUrl(null);

@@ -10,6 +10,7 @@ export const APP_CONFIG = {
     AMBULANCE: "108",
     FIRE: "101",
   },
+  // Supabase Configuration (Consider moving to .env for production)
   SUPABASE_URL: "https://tfgpkigjloqkrbvzseon.supabase.co",
   SUPABASE_PUBLISHABLE_KEY: "sb_publishable_dNUCTqnz4WzEyq6585GNkw_K_sG0r-j",
 };

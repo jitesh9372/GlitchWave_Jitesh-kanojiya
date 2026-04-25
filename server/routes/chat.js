@@ -29,6 +29,7 @@ router.post('/', async (req, res) => {
   }
 
   // ── 2. Call Gemini with automatic retry on 429 ─────────────────────────
+  // Note: This project uses the Gemini AI API, not GPT-5. Keys are stored in .env as VITE_GEMINI_API_KEY
   const apiKey = process.env.VITE_GEMINI_API_KEY || process.env.GEMINI_API_KEY;
   if (!apiKey) {
     return res.status(500).json({ error: 'Gemini API key not configured on server.' });

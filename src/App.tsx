@@ -542,7 +542,8 @@ const Home = ({
     if (!user) return;
 
     const contactData = {
-      ...contactFormData,
+      name: contactFormData.name,
+      message: JSON.stringify({ phone: contactFormData.phone, relation: contactFormData.relation }),
       user_id: user.id,
       feature_type: 'contact'
     };
@@ -551,7 +552,10 @@ const Home = ({
       if (editingContact) {
         const { error } = await supabase
           .from('users_detail')
-          .update(contactFormData)
+          .update({
+            name: contactFormData.name,
+            message: JSON.stringify({ phone: contactFormData.phone, relation: contactFormData.relation })
+          })
           .eq('id', editingContact.id);
         if (error) throw error;
       } else {
@@ -582,8 +586,10 @@ const Home = ({
 
   const openContactModal = (contact: any = null) => {
     if (contact) {
+      let parsedMsg = { phone: '', relation: '' };
+      try { parsedMsg = JSON.parse(contact.message || '{}'); } catch(e) {}
       setEditingContact(contact);
-      setContactFormData({ name: contact.name, relation: contact.relation, phone: contact.phone });
+      setContactFormData({ name: contact.name || '', relation: parsedMsg.relation || '', phone: parsedMsg.phone || '' });
     } else {
       setEditingContact(null);
       setContactFormData({ name: '', relation: '', phone: '' });
@@ -607,8 +613,6 @@ const Home = ({
             status: 'active',
             message: formData.notes,
             name: formData.name,
-            phone: formData.phone,
-            created_at: new Date().toISOString(),
             user_id: user?.id || null,
             location: location ? `(${location.lat}, ${location.lng})` : null
           }
@@ -1475,16 +1479,7 @@ export default function App() {
           })
           .eq('id', alertId);
 
-        await supabase
-          .from('users_detail')
-          .insert([{
-            feature_type: 'location_log',
-            user_id: user?.id || null,
-            location: `(${newLoc.lat}, ${newLoc.lng})`,
-            message: address,
-            status: 'active',
-            relation: alertId
-          }]);
+        // Only update the main row, no more location_logs inserted.
       },
       (err) => console.error("Watch error:", err),
       { enableHighAccuracy: true }
@@ -1575,13 +1570,12 @@ export default function App() {
               userId: user.id
             });
 
-            await supabase.from('users_detail').insert([{
-              feature_type: 'alert_update',
-              user_id: user.id,
-              message: path,
-              status: 'evidence_uploaded',
-              relation: alertId || activeAlertId
-            }]);
+            await supabase.from('users_detail')
+              .update({
+                message: path,
+                status: 'evidence_uploaded'
+              })
+              .eq('id', alertId || activeAlertId);
           } catch (err) {
             console.error("Error uploading evidence:", err);
           }
@@ -1591,13 +1585,12 @@ export default function App() {
       recorder.start();
       
       if (alertId || activeAlertId) {
-        await supabase.from('users_detail').insert([{
-          feature_type: 'alert_update',
-          user_id: user?.id || null,
-          message: 'Media recording started for evidence.',
-          status: 'recording',
-          relation: alertId || activeAlertId
-        }]);
+        await supabase.from('users_detail')
+          .update({
+            message: 'Media recording started for evidence.',
+            status: 'recording'
+          })
+          .eq('id', alertId || activeAlertId);
       }
       return true;
     } catch (err: any) {
@@ -1608,13 +1601,12 @@ export default function App() {
       // alert() completely freezes the JS thread and stops live location!
       if (alertId || activeAlertId) {
         try {
-          await supabase.from('users_detail').insert([{
-            feature_type: 'alert_update',
-            user_id: user?.id || null,
-            message: `Evidence recording restricted by OS (likely backgrounded/locked): ${err.message}`,
-            status: 'recording_failed',
-            relation: alertId || activeAlertId
-          }]);
+          await supabase.from('users_detail')
+            .update({
+              message: `Evidence recording restricted by OS: ${err.message}`,
+              status: 'recording_failed'
+            })
+            .eq('id', alertId || activeAlertId);
         } catch (e) {}
         return false;
       }
@@ -1669,8 +1661,6 @@ export default function App() {
             status: 'active',
             message: 'Emergency SOS Triggered via Panic Button',
             name: user?.email || 'Anonymous User',
-            phone: 'N/A',
-            created_at: new Date().toISOString(),
             user_id: user?.id || null,
             location: location ? `(${location.lat}, ${location.lng})` : 'Location not available'
           }
@@ -1694,14 +1684,12 @@ export default function App() {
           .eq('feature_type', 'contact');
         
         if (contacts && contacts.length > 0) {
-          const logs = contacts.map(contact => ({
-            feature_type: 'alert_update',
-            user_id: user?.id || null,
-            message: `Emergency SMS notification sent to ${contact.name} (${contact.phone})`,
-            status: 'notified',
-            relation: alertId
-          }));
-          await supabase.from('users_detail').insert(logs);
+          const contactNames = contacts.map(c => c.name).join(', ');
+          await supabase.from('users_detail')
+            .update({
+              message: `Emergency SMS notification sent to ${contactNames}`
+            })
+            .eq('id', alertId);
         }
         
         await startRecording(alertId);

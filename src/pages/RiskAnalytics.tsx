@@ -261,7 +261,7 @@ export default function RiskAnalytics() {
                      ) : (
                         activeAlertsList.map((alert) => (
                           <tr key={alert.id} className="hover:bg-slate-50 transition-colors">
-                             <td className="px-4 py-3 font-semibold text-slate-800">{alert.name || 'Anonymous User'} <br/><span className="text-xs text-slate-500 font-normal">{alert.phone || ''}</span></td>
+                             <td className="px-4 py-3 font-semibold text-slate-800">{alert.name || 'Anonymous User'}</td>
                              <td className="px-4 py-3 font-mono text-xs">{alert.location || 'Unknown'}</td>
                              <td className="px-4 py-3">{alert.ageInMinutes} min</td>
                              <td className="px-4 py-3">
