@@ -151,9 +151,7 @@ const InstagramReportPage = ({ user }: { user: any }) => {
             instagram_username: username || "Anonymous",
             reel_url: publicUrl,
             caption: caption,
-            is_direct_upload: true,
-            video_storage_path: uploadData?.path || filePath,
-            hashtag: '#alertaxis'
+            video_storage_path: uploadData?.path || filePath
           }
         ]);
 
@@ -182,7 +180,7 @@ const InstagramReportPage = ({ user }: { user: any }) => {
               Instagram Reports
             </h1>
             <p className="text-slate-500 dark:text-slate-400">
-              Monitoring and creating Reels with <span className="text-primary font-bold">#alertaxis_</span>.
+              Monitoring and creating direct emergency video reports.
             </p>
           </div>
           
@@ -306,7 +304,7 @@ const InstagramReportPage = ({ user }: { user: any }) => {
                         <div className="p-4 bg-primary/5 dark:bg-primary/10 rounded-2xl border border-primary/10">
                           <p className="text-xs text-primary font-medium flex items-center gap-2">
                             <AlertCircle className="w-4 h-4" />
-                            This reel will be tagged with #alertaxis_ automatically.
+                            This reel will be securely submitted to the emergency database.
                           </p>
                         </div>
 
@@ -352,7 +350,6 @@ const InstagramReportPage = ({ user }: { user: any }) => {
                   >
                     <div className="flex items-center justify-between mb-2">
                       <div className="flex items-center gap-2">
-                        <span className="text-xs font-bold text-primary uppercase tracking-widest">#alertaxis_</span>
                         {report.is_direct_upload && (
                           <span className="px-2 py-0.5 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 text-[10px] font-bold rounded-full">
                             DIRECT
