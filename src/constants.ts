@@ -1,4 +1,3 @@
-GOOGLE_OAUTH_URL: "https://accounts.google.com/o/oauth2/auth",
 export const APP_CONFIG = {
   APP_NAME: "AlertAxis",
   TAGLINE: "Instant Emergency Help at Your Fingertips",
@@ -11,6 +10,7 @@ export const APP_CONFIG = {
     AMBULANCE: "108",
     FIRE: "101",
   },
+  GOOGLE_OAUTH_URL: "https://accounts.google.com/o/oauth2/auth",
   // Supabase Configuration (Consider moving to .env for production)
   SUPABASE_URL: "https://tfgpkigjloqkrbvzseon.supabase.co",
   SUPABASE_PUBLISHABLE_KEY: "sb_publishable_dNUCTqnz4WzEyq6585GNkw_K_sG0r-j",
