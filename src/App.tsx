@@ -533,8 +533,22 @@ const Home = ({
       .eq('feature_type', 'contact')
       .order('created_at', { ascending: true });
     
-    if (error) console.error('Error fetching contacts:', error);
-    else setContacts(data || []);
+    if (error) {
+      console.error('Error fetching contacts:', error);
+    } else {
+      const parsedContacts = (data || []).map(c => {
+        let parsedMsg: any = { phone: '', relation: '' };
+        try { 
+          parsedMsg = JSON.parse(c.message || '{}'); 
+        } catch(e) {}
+        return { 
+          ...c, 
+          phone: parsedMsg.phone || '', 
+          relation: parsedMsg.relation || '' 
+        };
+      });
+      setContacts(parsedContacts);
+    }
   };
 
   const handleAddOrUpdateContact = async (e: React.FormEvent) => {
