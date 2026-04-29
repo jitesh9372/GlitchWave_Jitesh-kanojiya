@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 
-import { Upload, ExternalLink, AlertCircle, CheckCircle2, Loader2, Camera, Video, StopCircle, Trash2, Send } from 'lucide-react';
+import { Upload, ExternalLink, AlertCircle, CheckCircle2, Loader2, Camera, Video, StopCircle, Trash2, Send, X } from 'lucide-react';
 import { supabase } from '../supabaseClient';
 
 interface InstagramReport {
@@ -19,6 +19,8 @@ const InstagramReportPage = ({ user }: { user: any }) => {
   const [error, setError] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const [success, setSuccess] = useState<string | null>(null);
+  const [showToast, setShowToast] = useState(false);
+  const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Create Reel States
   const [isRecording, setIsRecording] = useState(false);
@@ -37,8 +39,17 @@ const InstagramReportPage = ({ user }: { user: any }) => {
     startCamera();
     return () => {
       stopCamera();
+      if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
     };
   }, []);
+
+  const triggerToast = () => {
+    setShowToast(true);
+    if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+    toastTimerRef.current = setTimeout(() => {
+      setShowToast(false);
+    }, 5000);
+  };
 
   const fetchReports = async () => {
     setLoading(true);
@@ -175,7 +186,8 @@ const InstagramReportPage = ({ user }: { user: any }) => {
 
       if (dbError) throw dbError;
 
-      setSuccess('✅ Video uploaded and report submitted successfully!');
+      setSuccess('Video uploaded and report submitted successfully!');
+      triggerToast();
       setRecordedBlob(null);
       setPreviewUrl(null);
       setCaption('');
@@ -213,12 +225,81 @@ const InstagramReportPage = ({ user }: { user: any }) => {
           </div>
         )}
 
-        {success && (
-          <div className="mb-6 p-4 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-900/30 rounded-2xl flex items-center gap-3 text-emerald-600 dark:text-emerald-400">
-            <CheckCircle2 className="w-5 h-5 flex-shrink-0" />
-            <p className="text-sm font-medium">{success}</p>
+        {/* Animated Toast Notification */}
+        <div
+          style={{
+            position: 'fixed',
+            bottom: '2rem',
+            right: '2rem',
+            zIndex: 9999,
+            transform: showToast ? 'translateY(0) scale(1)' : 'translateY(120%) scale(0.95)',
+            opacity: showToast ? 1 : 0,
+            transition: 'transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.3s ease',
+            pointerEvents: showToast ? 'auto' : 'none',
+          }}
+        >
+          <div style={{
+            background: 'linear-gradient(135deg, #10b981, #059669)',
+            borderRadius: '1.25rem',
+            padding: '1rem 1.25rem',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.75rem',
+            boxShadow: '0 20px 60px rgba(16,185,129,0.35), 0 4px 16px rgba(0,0,0,0.2)',
+            minWidth: '300px',
+            maxWidth: '380px',
+            overflow: 'hidden',
+            position: 'relative',
+          }}>
+            {/* Progress bar */}
+            <div style={{
+              position: 'absolute',
+              bottom: 0,
+              left: 0,
+              height: '3px',
+              background: 'rgba(255,255,255,0.4)',
+              width: showToast ? '0%' : '100%',
+              transition: showToast ? 'width 5s linear' : 'none',
+              borderRadius: '0 0 1.25rem 1.25rem',
+            }} />
+            {/* Icon */}
+            <div style={{
+              width: '2.5rem',
+              height: '2.5rem',
+              background: 'rgba(255,255,255,0.2)',
+              borderRadius: '50%',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              flexShrink: 0,
+            }}>
+              <CheckCircle2 style={{ width: '1.25rem', height: '1.25rem', color: 'white' }} />
+            </div>
+            {/* Text */}
+            <div style={{ flex: 1 }}>
+              <p style={{ color: 'white', fontWeight: 800, fontSize: '0.875rem', margin: 0 }}>Upload Successful!</p>
+              <p style={{ color: 'rgba(255,255,255,0.8)', fontSize: '0.75rem', marginTop: '0.125rem' }}>Your emergency video has been submitted to AlertAxis.</p>
+            </div>
+            {/* Close */}
+            <button
+              onClick={() => setShowToast(false)}
+              style={{
+                background: 'rgba(255,255,255,0.15)',
+                border: 'none',
+                borderRadius: '50%',
+                width: '1.75rem',
+                height: '1.75rem',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer',
+                flexShrink: 0,
+              }}
+            >
+              <X style={{ width: '0.875rem', height: '0.875rem', color: 'white' }} />
+            </button>
           </div>
-        )}
+        </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Left: Camera + Form */}
